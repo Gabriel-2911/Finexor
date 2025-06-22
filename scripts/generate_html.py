@@ -1,10 +1,9 @@
+import os
 import pandas as pd
 import yfinance as yf
 import plotly.express as px
-import plotly.io as pio
 
-pio.renderers.default = "browser"
-
+# Baixa os dados
 ticker = "VALE3.SA"
 df = yf.download(ticker, start="2022-01-01")
 
@@ -20,5 +19,11 @@ df["Rentabilidade Acumulada"] = (1 + df["Rentabilidade"]).cumprod()
 fig = px.line(df, x=df.index, y="Rentabilidade Acumulada",
               title="Rentabilidade Acumulada de VALE3")
 
-# Exporta com Plotly embutido (garantido que funcione no GitHub Pages)
-fig.write_html("../docs/output/vale3_rentabilidade.html", include_plotlyjs='cdn', full_html=True)
+# Garante que o diretório exista
+output_dir = "../docs/assets/data"
+os.makedirs(output_dir, exist_ok=True)
+
+# Exporta para o local correto
+fig.write_html(f"{output_dir}/rentabilidade.html", include_plotlyjs='cdn', full_html=True)
+
+print("✅ Gráfico gerado em: docs/assets/data/rentabilidade.html")
