@@ -21,4 +21,5 @@ fig = px.line(df, x=df.index, y="Rentabilidade Acumulada",
               title="Rentabilidade Acumulada de VALE3")
 
 # Exportar para o GitHub Pages (dentro da pasta docs)
-fig.write_html("../docs/output/vale3_rentabilidade.html", include_plotlyjs='directory')
+fig.write_html("../docs/output/vale3_rentabilidade.html", include_plotlyjs='cdn')
+
