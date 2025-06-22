@@ -1,0 +1,100 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Finexor - Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { padding: 0; margin: 0; }
+    .sidebar {
+      height: 100vh;
+      width: 220px;
+      position: fixed;
+      background-color: #111;
+      color: white;
+      padding-top: 20px;
+    }
+    .sidebar a {
+      padding: 12px;
+      display: block;
+      color: white;
+      text-decoration: none;
+    }
+    .sidebar a:hover {
+      background-color: #575757;
+    }
+    .main-content {
+      margin-left: 230px;
+      padding: 20px;
+    }
+    .kpi-card {
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <h4 class="text-center">📊 Finexor</h4>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#perfil">Seu Perfil</a>
+    <a href="#sobre">Sobre</a>
+  </div>
+  <div class="main-content">
+    <section id="dashboard">
+      <h2>Rentabilidade Comparada</h2>
+      <div id="kpis" class="row my-4">
+        <div class="col-md-3"><div class="bg-light kpi-card">📈 Retorno: 34%</div></div>
+        <div class="col-md-3"><div class="bg-light kpi-card">📉 Volatilidade: 18%</div></div>
+        <div class="col-md-3"><div class="bg-light kpi-card">⚖️ Sharpe: 1.2</div></div>
+        <div class="col-md-3"><div class="bg-light kpi-card">🔻 Máx. Queda: -11%</div></div>
+      </div>
+      <iframe src="assets/data/rentabilidade.html" width="100%" height="500px" style="border:none;"></iframe>
+    </section>
+
+    <hr />
+    <section id="perfil">
+      <h2>Diagnóstico de Perfil</h2>
+      <p>Responda algumas perguntas rápidas:</p>
+      <form id="quiz">
+        <label>1. Qual sua tolerância ao risco?</label><br/>
+        <input type="radio" name="q1" value="C"> Baixa<br/>
+        <input type="radio" name="q1" value="M"> Média<br/>
+        <input type="radio" name="q1" value="A"> Alta<br/><br/>
+
+        <label>2. Por quanto tempo pretende investir?</label><br/>
+        <input type="radio" name="q2" value="C"> Até 1 ano<br/>
+        <input type="radio" name="q2" value="M"> 1 a 3 anos<br/>
+        <input type="radio" name="q2" value="A"> Acima de 3 anos<br/><br/>
+
+        <label>3. Como reage a perdas?</label><br/>
+        <input type="radio" name="q3" value="C"> Prefiro evitar<br/>
+        <input type="radio" name="q3" value="M"> Aceito alguma<br/>
+        <input type="radio" name="q3" value="A"> Natural do mercado<br/><br/>
+
+        <button type="button" onclick="diagnosticar()" class="btn btn-primary">Diagnosticar</button>
+      </form>
+      <div id="resultado" class="mt-4"></div>
+    </section>
+
+    <hr />
+    <section id="sobre">
+      <h2>Sobre o Finexor</h2>
+      <p>Projeto gratuito e open source para diagnóstico de perfil e análise de ativos reais.</p>
+    </section>
+  </div>
+
+  <script>
+    function diagnosticar() {
+      const respostas = ['q1', 'q2', 'q3'].map(id => document.querySelector(`input[name="${id}"]:checked`)?.value || 'C');
+      const score = respostas.reduce((acc, val) => acc + (val === 'A' ? 2 : val === 'M' ? 1 : 0), 0);
+      let perfil = "Conservador";
+      if (score >= 5) perfil = "Agressivo";
+      else if (score >= 3) perfil = "Moderado";
+      document.getElementById("resultado").innerHTML = `<h4>🧠 Seu perfil: <strong>${perfil}</strong></h4>`;
+    }
+  </script>
+</body>
+</html>
