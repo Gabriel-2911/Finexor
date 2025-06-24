@@ -41,24 +41,21 @@ def calc_kpis(series):
 
 kpis_df = df_norm.apply(calc_kpis)
 
-fig = go.Figure()
-for col in df_norm.columns:
-    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[col],
-                             mode='lines', name=col))
+output_path = "docs/assets/data"
+grafico_path = os.path.join(output_path, "graficos")
+os.makedirs(grafico_path, exist_ok=True)
 
-fig.update_layout(
-    title="Rentabilidade Acumulada dos Ativos (base 1)",
-    xaxis_title="Data",
-    yaxis_title="Rentabilidade Normalizada",
-    legend_title="Ativos",
-    template="plotly_white"
-)
+# Gráfico individual por ativo
+for ativo in df_norm.columns:
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[ativo], mode='lines', name=ativo))
+    fig.update_layout(title=f"Rentabilidade Acumulada - {ativo}",
+                      xaxis_title="Data",
+                      yaxis_title="Rentabilidade Normalizada",
+                      template="plotly_white")
+    fig.write_html(f"{grafico_path}/{ativo}.html", include_plotlyjs="cdn", full_html=True)
 
-output_path = "../docs/assets/data"
-os.makedirs(output_path, exist_ok=True)
-
-fig.write_html(f"{output_path}/rentabilidade.html", include_plotlyjs="cdn", full_html=True)
-
+# Gera KPIs
 kpi_html = "<div class='row my-4'>\n"
 for ativo in kpis_df.columns:
     kpi_html += f"<div class='col-md-3'><div class='bg-light kpi-card'><strong>{ativo}</strong><br/>"
