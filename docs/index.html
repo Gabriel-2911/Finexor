@@ -5,7 +5,7 @@
   <title>Finexor - Dashboard</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { padding: 0; margin: 0; }
+    body { margin: 0; padding: 0; }
     .sidebar {
       height: 100vh;
       width: 220px;
@@ -20,9 +20,7 @@
       color: white;
       text-decoration: none;
     }
-    .sidebar a:hover {
-      background-color: #575757;
-    }
+    .sidebar a:hover { background-color: #575757; }
     .main-content {
       margin-left: 230px;
       padding: 20px;
@@ -31,6 +29,11 @@
       border-radius: 10px;
       padding: 20px;
       margin-bottom: 15px;
+    }
+    #loading {
+      display: none;
+      text-align: center;
+      padding: 10px;
     }
   </style>
 </head>
@@ -46,25 +49,58 @@
     <section id="dashboard">
       <h2>Rentabilidade Comparada</h2>
 
-      <!-- Dropdown para escolha de ativos -->
-      <label for="ativoSelect" class="form-label">Escolha um ativo:</label>
-      <select id="ativoSelect" class="form-select mb-4" onchange="trocarAtivo()">
-        <option value="VALE3">VALE3</option>
-        <option value="PETR4">PETR4</option>
-        <option value="ITUB4">ITUB4</option>
-        <option value="BBAS3">BBAS3</option>
-        <option value="B3SA3">B3SA3</option>
-        <option value="WEGE3">WEGE3</option>
-        <option value="IBOV">IBOV</option>
-        <option value="IVVB11">IVVB11</option>
-        <option value="CDI">CDI</option>
-      </select>
+      <!-- Filtro de período -->
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label for="dataInicio">Data início:</label>
+          <input type="date" id="dataInicio" class="form-control">
+        </div>
+        <div class="col-md-3">
+          <label for="dataFim">Data fim:</label>
+          <input type="date" id="dataFim" class="form-control">
+        </div>
+      </div>
 
-      <!-- KPIs reais -->
+      <!-- Dropdowns -->
+      <label for="ativoSelect" class="form-label">Escolha os ativos:</label>
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <select id="ativo1" class="form-select" onchange="trocarGrafico()">
+            <option value="VALE3">VALE3</option>
+            <option value="PETR4">PETR4</option>
+            <option value="ITUB4">ITUB4</option>
+            <option value="BBAS3">BBAS3</option>
+            <option value="B3SA3">B3SA3</option>
+            <option value="WEGE3">WEGE3</option>
+            <option value="IBOV">IBOV</option>
+            <option value="IVVB11">IVVB11</option>
+            <option value="CDI">CDI</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <select id="ativo2" class="form-select" onchange="trocarGrafico()">
+            <option value="">(Comparar com...)</option>
+            <option value="VALE3">VALE3</option>
+            <option value="PETR4">PETR4</option>
+            <option value="ITUB4">ITUB4</option>
+            <option value="BBAS3">BBAS3</option>
+            <option value="B3SA3">B3SA3</option>
+            <option value="WEGE3">WEGE3</option>
+            <option value="IBOV">IBOV</option>
+            <option value="IVVB11">IVVB11</option>
+            <option value="CDI">CDI</option>
+          </select>
+        </div>
+        <div class="col-md-4 text-end">
+          <button onclick="exportarGrafico()" class="btn btn-outline-secondary">📤 Exportar PNG</button>
+        </div>
+      </div>
+
       <iframe src="assets/data/kpis.html" width="100%" height="180px" style="border:none;"></iframe>
 
-      <!-- Gráfico por ativo -->
-      <iframe id="graficoFrame" src="assets/data/graficos/VALE3.html" width="100%" height="500px" style="border:none;"></iframe>
+      <!-- Loading e gráfico -->
+      <div id="loading">⏳ Carregando gráfico...</div>
+      <iframe id="graficoFrame" src="assets/data/graficos/VALE3.html" width="100%" height="500px" style="border:none;" onload="esconderLoading()"></iframe>
     </section>
 
     <hr />
@@ -95,13 +131,30 @@
     <section id="sobre">
       <h2>Sobre o Finexor</h2>
       <p>Projeto gratuito e open source para diagnóstico de perfil e análise comparativa de ativos reais.</p>
+      <p>Criado por Gabriel Cortes. <a href="https://www.linkedin.com/in/gabriel-cortes-teixeira/" target="_blank">LinkedIn</a></p>
     </section>
   </div>
 
   <script>
-    function trocarAtivo() {
-      const ativo = document.getElementById("ativoSelect").value;
-      document.getElementById("graficoFrame").src = `assets/data/graficos/${ativo}.html`;
+    function trocarGrafico() {
+      const ativo1 = document.getElementById("ativo1").value;
+      const ativo2 = document.getElementById("ativo2").value;
+      const iframe = document.getElementById("graficoFrame");
+      const loading = document.getElementById("loading");
+
+      loading.style.display = "block";
+
+      let path = `assets/data/graficos/${ativo1}.html`;
+      if (ativo2 && ativo2 !== ativo1) {
+        const atv = [ativo1, ativo2].sort().join("_");
+        path = `assets/data/graficos/${atv}.html`;
+      }
+
+      iframe.src = path;
+    }
+
+    function esconderLoading() {
+      document.getElementById("loading").style.display = "none";
     }
 
     function diagnosticar() {
@@ -111,6 +164,11 @@
       if (score >= 5) perfil = "Agressivo";
       else if (score >= 3) perfil = "Moderado";
       document.getElementById("resultado").innerHTML = `<h4>🧠 Seu perfil: <strong>${perfil}</strong></h4>`;
+    }
+
+    function exportarGrafico() {
+      const iframe = document.getElementById("graficoFrame");
+      alert("Para exportar como imagem, use o botão da própria visualização Plotly (canto superior direito).");
     }
   </script>
 </body>
