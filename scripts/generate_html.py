@@ -1,29 +1,73 @@
-import os
-import pandas as pd
 import yfinance as yf
-import plotly.express as px
+import pandas as pd
+import numpy as np
+import plotly.graph_objs as go
+import os
 
-# Baixa os dados
-ticker = "VALE3.SA"
-df = yf.download(ticker, start="2022-01-01")
+tickers = {
+    "VALE3.SA": "VALE3",
+    "PETR4.SA": "PETR4",
+    "ITUB4.SA": "ITUB4",
+    "BBAS3.SA": "BBAS3",
+    "B3SA3.SA": "B3SA3",
+    "WEGE3.SA": "WEGE3",
+    "^BVSP": "IBOV",
+    "^IFIX": "IFIX"
+}
 
-# Se for MultiIndex, corrige
-if isinstance(df.columns, pd.MultiIndex):
-    df.columns = df.columns.get_level_values(0)
+start_date = "2022-01-01"
+df_all = yf.download(list(tickers.keys()), start=start_date)["Adj Close"]
+df_all.columns = [tickers[t] for t in df_all.columns]
 
-# Calcula rentabilidade
-df["Rentabilidade"] = df["Close"].pct_change().fillna(0)
-df["Rentabilidade Acumulada"] = (1 + df["Rentabilidade"]).cumprod()
+cdi_rate_aa = 0.1365
+cdi_daily = (1 + cdi_rate_aa) ** (1 / 252) - 1
+df_all["CDI"] = (1 + cdi_daily) ** np.arange(len(df_all))
+df_all["CDI"] = df_all["CDI"] / df_all["CDI"].iloc[0]
 
-# Gera gráfico
-fig = px.line(df, x=df.index, y="Rentabilidade Acumulada",
-              title="Rentabilidade Acumulada de VALE3")
+df_norm = df_all / df_all.iloc[0]
 
-# Garante que o diretório exista
-output_dir = "../docs/assets/data"
-os.makedirs(output_dir, exist_ok=True)
+def calc_kpis(series):
+    rentab = series[-1] - 1
+    vol = np.std(series.pct_change()) * np.sqrt(252)
+    sharpe = (rentab - cdi_rate_aa) / vol if vol > 0 else 0
+    rolling_max = series.cummax()
+    drawdown = (series / rolling_max - 1).min()
+    return pd.Series({
+        "Rentabilidade": f"{rentab*100:.2f}%",
+        "Volatilidade": f"{vol*100:.2f}%",
+        "Sharpe": f"{sharpe:.2f}",
+        "Drawdown": f"{drawdown*100:.2f}%"
+    })
 
-# Exporta para o local correto
-fig.write_html(f"{output_dir}/rentabilidade.html", include_plotlyjs='cdn', full_html=True)
+kpis_df = df_norm.apply(calc_kpis)
 
-print("✅ Gráfico gerado em: docs/assets/data/rentabilidade.html")
+fig = go.Figure()
+for col in df_norm.columns:
+    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[col],
+                             mode='lines', name=col))
+
+fig.update_layout(
+    title="Rentabilidade Acumulada dos Ativos (base 1)",
+    xaxis_title="Data",
+    yaxis_title="Rentabilidade Normalizada",
+    legend_title="Ativos",
+    template="plotly_white"
+)
+
+output_path = "../docs/assets/data"
+os.makedirs(output_path, exist_ok=True)
+
+fig.write_html(f"{output_path}/rentabilidade.html", include_plotlyjs="cdn", full_html=True)
+
+kpi_html = "<div class='row my-4'>\n"
+for ativo in kpis_df.columns:
+    kpi_html += f"<div class='col-md-3'><div class='bg-light kpi-card'><strong>{ativo}</strong><br/>"
+    for metric, value in kpis_df[ativo].items():
+        kpi_html += f"{metric}: {value}<br/>"
+    kpi_html += "</div></div>\n"
+kpi_html += "</div>"
+
+with open(f"{output_path}/kpis.html", "w", encoding="utf-8") as f:
+    f.write(kpi_html)
+
+print("✅ Dashboard atualizado com sucesso.")
