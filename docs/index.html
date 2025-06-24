@@ -45,19 +45,15 @@
   <div class="main-content">
     <section id="dashboard">
       <h2>Rentabilidade Comparada</h2>
-      <div id="kpis" class="row my-4">
-        <div class="col-md-3"><div class="bg-light kpi-card">📈 Retorno: 34%</div></div>
-        <div class="col-md-3"><div class="bg-light kpi-card">📉 Volatilidade: 18%</div></div>
-        <div class="col-md-3"><div class="bg-light kpi-card">⚖️ Sharpe: 1.2</div></div>
-        <div class="col-md-3"><div class="bg-light kpi-card">🔻 Máx. Queda: -11%</div></div>
-      </div>
+      <!-- KPIs reais -->
+      <!--#include file="assets/data/kpis.html"-->
+      <iframe src="assets/data/kpis.html" width="100%" height="170px" style="border:none;"></iframe>
       <iframe src="assets/data/rentabilidade.html" width="100%" height="500px" style="border:none;"></iframe>
     </section>
 
     <hr />
     <section id="perfil">
       <h2>Diagnóstico de Perfil</h2>
-      <p>Responda algumas perguntas rápidas:</p>
       <form id="quiz">
         <label>1. Qual sua tolerância ao risco?</label><br/>
         <input type="radio" name="q1" value="C"> Baixa<br/>
@@ -82,7 +78,7 @@
     <hr />
     <section id="sobre">
       <h2>Sobre o Finexor</h2>
-      <p>Projeto gratuito e open source para diagnóstico de perfil e análise de ativos reais.</p>
+      <p>Projeto gratuito e open source para diagnóstico de perfil e análise comparativa de ativos reais.</p>
     </section>
   </div>
 
