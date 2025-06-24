@@ -45,8 +45,26 @@
   <div class="main-content">
     <section id="dashboard">
       <h2>Rentabilidade Comparada</h2>
-      <iframe src="assets/data/kpis.html" width="100%" height="170px" style="border:none;"></iframe>
-      <iframe src="assets/data/rentabilidade.html" width="100%" height="500px" style="border:none;"></iframe>
+
+      <!-- Dropdown para escolha de ativos -->
+      <label for="ativoSelect" class="form-label">Escolha um ativo:</label>
+      <select id="ativoSelect" class="form-select mb-4" onchange="trocarAtivo()">
+        <option value="VALE3">VALE3</option>
+        <option value="PETR4">PETR4</option>
+        <option value="ITUB4">ITUB4</option>
+        <option value="BBAS3">BBAS3</option>
+        <option value="B3SA3">B3SA3</option>
+        <option value="WEGE3">WEGE3</option>
+        <option value="IBOV">IBOV</option>
+        <option value="IVVB11">IVVB11</option>
+        <option value="CDI">CDI</option>
+      </select>
+
+      <!-- KPIs reais -->
+      <iframe src="assets/data/kpis.html" width="100%" height="180px" style="border:none;"></iframe>
+
+      <!-- Gráfico por ativo -->
+      <iframe id="graficoFrame" src="assets/data/graficos/VALE3.html" width="100%" height="500px" style="border:none;"></iframe>
     </section>
 
     <hr />
@@ -81,6 +99,11 @@
   </div>
 
   <script>
+    function trocarAtivo() {
+      const ativo = document.getElementById("ativoSelect").value;
+      document.getElementById("graficoFrame").src = `assets/data/graficos/${ativo}.html`;
+    }
+
     function diagnosticar() {
       const respostas = ['q1', 'q2', 'q3'].map(id => document.querySelector(`input[name="${id}"]:checked`)?.value || 'C');
       const score = respostas.reduce((acc, val) => acc + (val === 'A' ? 2 : val === 'M' ? 1 : 0), 0);
