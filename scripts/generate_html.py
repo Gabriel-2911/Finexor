@@ -4,8 +4,8 @@ import numpy as np
 import plotly.graph_objs as go
 import os
 import itertools
+import json
 
-# Lista de ativos
 tickers = {
     "VALE3.SA": "VALE3",
     "PETR4.SA": "PETR4",
@@ -17,7 +17,6 @@ tickers = {
     "IVVB11.SA": "IVVB11"
 }
 
-# Períodos
 start_date = "2022-01-01"
 periodos = {
     "all": None,
@@ -27,20 +26,16 @@ periodos = {
     "30": 30
 }
 
-# Download dos dados
 df_all = yf.download(list(tickers.keys()), start=start_date, auto_adjust=True)["Close"]
 df_all.columns = [tickers.get(col, col) for col in df_all.columns]
 
-# CDI simulado
 cdi_rate_aa = 0.1365
-cdi_daily = (1 + cdi_rate_aa)**(1/252) - 1
+cdi_daily = (1 + cdi_rate_aa) ** (1 / 252) - 1
 df_all["CDI"] = (1 + cdi_daily) ** np.arange(len(df_all))
 df_all["CDI"] = df_all["CDI"] / df_all["CDI"].iloc[0]
 
-# Normalização
 df_norm = df_all / df_all.iloc[0]
 
-# Cálculo de KPIs
 def calc_kpis(series):
     rentab = series.iloc[-1] - 1
     vol = np.std(series.pct_change(fill_method=None)) * np.sqrt(252)
@@ -55,7 +50,6 @@ def calc_kpis(series):
 
 kpis_df = df_norm.apply(calc_kpis)
 
-# KPIs HTML
 os.makedirs("docs/assets/data", exist_ok=True)
 kpi_html = "<div class='row my-4'>\n"
 for ativo in kpis_df.columns:
@@ -67,37 +61,20 @@ kpi_html += "</div>"
 with open("docs/assets/data/kpis.html", "w", encoding="utf-8") as f:
     f.write(kpi_html)
 
-# Gráficos por período
 graficos_path = "docs/assets/data/comparador"
 os.makedirs(graficos_path, exist_ok=True)
+disponiveis = []
+
 ativos = df_norm.columns.tolist()
 
 for periodo_nome, dias in periodos.items():
     df_periodo = df_norm.tail(dias) if dias else df_norm.copy()
-
-    # Gráficos individuais
-    for ativo in ativos:
-        serie = df_periodo[ativo].dropna()
-        if len(serie) < 2 or serie.nunique() <= 1:
-            print(f"⚠️ Ignorando gráfico de {ativo}_{periodo_nome} - dados insuficientes")
-            continue
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=serie.index, y=serie, mode='lines', name=ativo))
-        fig.update_layout(
-            title=f"Rentabilidade - {ativo} ({periodo_nome})",
-            xaxis_title="Data",
-            yaxis_title="Rentabilidade Normalizada",
-            template="plotly_white"
-        )
-        fig.write_html(f"{graficos_path}/{ativo}_{periodo_nome}.html", include_plotlyjs="cdn", full_html=True)
-
-    # Gráficos comparativos
-    for a1, a2 in itertools.combinations(ativos, 2):
+    for a1, a2 in itertools.combinations(sorted(ativos), 2):
         s1 = df_periodo[a1].dropna()
         s2 = df_periodo[a2].dropna()
         if len(s1) < 2 or len(s2) < 2 or s1.nunique() <= 1 or s2.nunique() <= 1:
-            print(f"⚠️ Ignorando {a1}_{a2}_{periodo_nome} - dados insuficientes")
             continue
+
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=s1.index, y=s1, mode='lines', name=a1))
         fig.add_trace(go.Scatter(x=s2.index, y=s2, mode='lines', name=a2))
@@ -109,5 +86,10 @@ for periodo_nome, dias in periodos.items():
         )
         nome_arquivo = f"{a1}_{a2}_{periodo_nome}.html"
         fig.write_html(f"{graficos_path}/{nome_arquivo}", include_plotlyjs="cdn", full_html=True)
+        disponiveis.append(f"{a1}_{a2}_{periodo_nome}")
+
+# Salva o JSON com pares existentes
+with open("docs/assets/data/comparador/disponiveis.json", "w") as f:
+    json.dump(disponiveis, f, indent=2)
 
 print("✅ Todos os gráficos foram gerados com sucesso!")

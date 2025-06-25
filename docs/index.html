@@ -98,7 +98,8 @@
       <iframe src="assets/data/kpis.html" width="100%" height="180px" style="border:none;"></iframe>
 
       <div class="loader" id="loader">⏳ Carregando gráfico...</div>
-      <iframe id="graficoFrame" src="assets/data/comparador/VALE3.html" width="100%" height="500px" style="border:none;"></iframe>
+      <iframe id="graficoFrame" width="100%" height="500px" style="border:none;"></iframe>
+      <div id="msgIndisponivel" class="alert alert-warning mt-3" style="display:none;">🚫 Gráfico indisponível para essa combinação.</div>
     </section>
 
     <hr />
@@ -133,6 +134,15 @@
   </div>
 
   <script>
+    let disponiveis = [];
+
+    fetch("assets/data/comparador/disponiveis.json")
+      .then(res => res.json())
+      .then(data => {
+        disponiveis = data;
+        trocarAtivo();
+      });
+
     function diagnosticar() {
       const respostas = ['q1', 'q2', 'q3'].map(id => document.querySelector(`input[name="${id}"]:checked`)?.value || 'C');
       const score = respostas.reduce((acc, val) => acc + (val === 'A' ? 2 : val === 'M' ? 1 : 0), 0);
@@ -143,28 +153,34 @@
     }
 
     function trocarAtivo() {
-      const ativo = document.getElementById("ativoSelect").value.toUpperCase();
-      const comparado = document.getElementById("ativoComparado").value.toUpperCase();
+      const ativo = document.getElementById("ativoSelect").value;
+      const comparado = document.getElementById("ativoComparado").value;
       const periodo = document.getElementById("periodoSelect").value;
-
-      const frame = document.getElementById("graficoFrame");
       const loader = document.getElementById("loader");
+      const frame = document.getElementById("graficoFrame");
+      const msg = document.getElementById("msgIndisponivel");
 
       loader.style.display = "block";
       frame.style.display = "none";
+      msg.style.display = "none";
 
-      let src;
-      if (comparado && comparado !== ativo) {
-        src = `assets/data/comparador/${ativo}_${comparado}_${periodo}.html`;
+      let nomeArquivo = comparado
+        ? `${ativo}_${comparado}_${periodo}`
+        : `${ativo}_${periodo}`;
+
+      const caminho = `assets/data/comparador/${nomeArquivo}.html`;
+
+      if (!comparado || disponiveis.includes(nomeArquivo)) {
+        frame.onload = () => {
+          loader.style.display = "none";
+          frame.style.display = "block";
+        };
+        frame.src = caminho;
       } else {
-        src = `assets/data/comparador/${ativo}_${periodo}.html`;
-      }
-
-      frame.onload = () => {
         loader.style.display = "none";
-        frame.style.display = "block";
-      };
-      frame.src = src;
+        frame.src = "";
+        msg.style.display = "block";
+      }
     }
   </script>
 </body>
