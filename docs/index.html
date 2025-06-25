@@ -143,8 +143,8 @@
     }
 
     function trocarAtivo() {
-      const ativo = document.getElementById("ativoSelect").value;
-      const comparado = document.getElementById("ativoComparado").value;
+      const ativo = document.getElementById("ativoSelect").value.toUpperCase();
+      const comparado = document.getElementById("ativoComparado").value.toUpperCase();
       const periodo = document.getElementById("periodoSelect").value;
 
       const frame = document.getElementById("graficoFrame");
@@ -154,8 +154,8 @@
       frame.style.display = "none";
 
       let src;
-      if (comparado) {
-        src = `assetsdata/comparador/${ativo}_${comparado}_${periodo}.html`;
+      if (comparado && comparado !== ativo) {
+        src = `assets/data/comparador/${ativo}_${comparado}_${periodo}.html`;
       } else {
         src = `assets/data/comparador/${ativo}_${periodo}.html`;
       }
