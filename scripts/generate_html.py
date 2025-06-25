@@ -17,7 +17,7 @@ tickers = {
     "IVVB11.SA": "IVVB11"
 }
 
-# Parâmetros
+# Períodos
 start_date = "2022-01-01"
 periodos = {
     "all": None,
@@ -33,7 +33,7 @@ df_all.columns = [tickers.get(col, col) for col in df_all.columns]
 
 # CDI simulado
 cdi_rate_aa = 0.1365
-cdi_daily = (1 + cdi_rate_aa) ** (1 / 252) - 1
+cdi_daily = (1 + cdi_rate_aa)**(1/252) - 1
 df_all["CDI"] = (1 + cdi_daily) ** np.arange(len(df_all))
 df_all["CDI"] = df_all["CDI"] / df_all["CDI"].iloc[0]
 
@@ -67,31 +67,29 @@ kpi_html += "</div>"
 with open("docs/assets/data/kpis.html", "w", encoding="utf-8") as f:
     f.write(kpi_html)
 
-# Geração dos gráficos
+# Gráficos por período
 graficos_path = "docs/assets/data/comparador"
 os.makedirs(graficos_path, exist_ok=True)
-# Gráficos comparativos (duplas únicas ordenadas)
-# Gráficos comparativos (duplas únicas ordenadas)
 ativos = df_norm.columns.tolist()
-pares = list(itertools.combinations(sorted(ativos), 2))
 
-# Caminho para salvar os comparativos
-output_path = "docs/assets/data/comparador"
-os.makedirs(output_path, exist_ok=True)
+for periodo_nome, dias in periodos.items():
+    df_periodo = df_norm.tail(dias) if dias else df_norm.copy()
 
-for a1, a2 in pares:
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[a1], mode='lines', name=a1))
-    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[a2], mode='lines', name=a2))
-    fig.update_layout(
-        title=f"Comparativo - {a1} vs {a2}",
-        xaxis_title="Data",
-        yaxis_title="Rentabilidade Normalizada",
-        template="plotly_white"
-    )
-    nome_arquivo = f"{a1.upper()}_{a2.upper()}.html"
-    fig.write_html(f"{output_path}/{nome_arquivo}", include_plotlyjs="cdn", full_html=True)
-
+    # Gráficos individuais
+    for ativo in ativos:
+        serie = df_periodo[ativo].dropna()
+        if len(serie) < 2 or serie.nunique() <= 1:
+            print(f"⚠️ Ignorando gráfico de {ativo}_{periodo_nome} - dados insuficientes")
+            continue
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=serie.index, y=serie, mode='lines', name=ativo))
+        fig.update_layout(
+            title=f"Rentabilidade - {ativo} ({periodo_nome})",
+            xaxis_title="Data",
+            yaxis_title="Rentabilidade Normalizada",
+            template="plotly_white"
+        )
+        fig.write_html(f"{graficos_path}/{ativo}_{periodo_nome}.html", include_plotlyjs="cdn", full_html=True)
 
     # Gráficos comparativos
     for a1, a2 in itertools.combinations(ativos, 2):
@@ -100,7 +98,6 @@ for a1, a2 in pares:
         if len(s1) < 2 or len(s2) < 2 or s1.nunique() <= 1 or s2.nunique() <= 1:
             print(f"⚠️ Ignorando {a1}_{a2}_{periodo_nome} - dados insuficientes")
             continue
-
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=s1.index, y=s1, mode='lines', name=a1))
         fig.add_trace(go.Scatter(x=s2.index, y=s2, mode='lines', name=a2))
