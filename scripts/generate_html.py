@@ -71,8 +71,13 @@ with open("docs/assets/data/kpis.html", "w", encoding="utf-8") as f:
 graficos_path = "docs/assets/data/comparador"
 os.makedirs(graficos_path, exist_ok=True)
 # Gráficos comparativos (duplas únicas ordenadas)
+# Gráficos comparativos (duplas únicas ordenadas)
 ativos = df_norm.columns.tolist()
 pares = list(itertools.combinations(sorted(ativos), 2))
+
+# Caminho para salvar os comparativos
+output_path = "docs/assets/data/comparador"
+os.makedirs(output_path, exist_ok=True)
 
 for a1, a2 in pares:
     fig = go.Figure()
