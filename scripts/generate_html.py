@@ -27,7 +27,7 @@ periodos = {
     "30": 30
 }
 
-# Baixa dados
+# Download dos dados
 df_all = yf.download(list(tickers.keys()), start=start_date, auto_adjust=True)["Close"]
 df_all.columns = [tickers.get(col, col) for col in df_all.columns]
 
@@ -37,10 +37,10 @@ cdi_daily = (1 + cdi_rate_aa) ** (1 / 252) - 1
 df_all["CDI"] = (1 + cdi_daily) ** np.arange(len(df_all))
 df_all["CDI"] = df_all["CDI"] / df_all["CDI"].iloc[0]
 
-# Normaliza
+# Normalização
 df_norm = df_all / df_all.iloc[0]
 
-# Calcula KPIs
+# Cálculo de KPIs
 def calc_kpis(series):
     rentab = series.iloc[-1] - 1
     vol = np.std(series.pct_change(fill_method=None)) * np.sqrt(252)
@@ -67,7 +67,7 @@ kpi_html += "</div>"
 with open("docs/assets/data/kpis.html", "w", encoding="utf-8") as f:
     f.write(kpi_html)
 
-# Geração de gráficos
+# Geração dos gráficos
 graficos_path = "docs/assets/data/comparador"
 os.makedirs(graficos_path, exist_ok=True)
 ativos = df_norm.columns.tolist()
@@ -80,8 +80,13 @@ for periodo_nome, dias in periodos.items():
 
     # Gráficos individuais
     for ativo in ativos:
+        serie = df_periodo[ativo].dropna()
+        if len(serie) < 2 or serie.nunique() <= 1:
+            print(f"⚠️ Ignorando {ativo}_{periodo_nome} - dados insuficientes ou constantes")
+            continue
+
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df_periodo.index, y=df_periodo[ativo], mode='lines', name=ativo))
+        fig.add_trace(go.Scatter(x=serie.index, y=serie, mode='lines', name=ativo))
         fig.update_layout(
             title=f"Rentabilidade - {ativo} ({periodo_nome})",
             xaxis_title="Data",
@@ -92,9 +97,15 @@ for periodo_nome, dias in periodos.items():
 
     # Gráficos comparativos
     for a1, a2 in itertools.combinations(ativos, 2):
+        s1 = df_periodo[a1].dropna()
+        s2 = df_periodo[a2].dropna()
+        if len(s1) < 2 or len(s2) < 2 or s1.nunique() <= 1 or s2.nunique() <= 1:
+            print(f"⚠️ Ignorando {a1}_{a2}_{periodo_nome} - dados insuficientes")
+            continue
+
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=df_periodo.index, y=df_periodo[a1], mode='lines', name=a1))
-        fig.add_trace(go.Scatter(x=df_periodo.index, y=df_periodo[a2], mode='lines', name=a2))
+        fig.add_trace(go.Scatter(x=s1.index, y=s1, mode='lines', name=a1))
+        fig.add_trace(go.Scatter(x=s2.index, y=s2, mode='lines', name=a2))
         fig.update_layout(
             title=f"Comparativo - {a1} vs {a2} ({periodo_nome})",
             xaxis_title="Data",
