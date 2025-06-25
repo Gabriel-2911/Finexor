@@ -70,30 +70,23 @@ with open("docs/assets/data/kpis.html", "w", encoding="utf-8") as f:
 # Geração dos gráficos
 graficos_path = "docs/assets/data/comparador"
 os.makedirs(graficos_path, exist_ok=True)
+# Gráficos comparativos (duplas únicas ordenadas)
 ativos = df_norm.columns.tolist()
+pares = list(itertools.combinations(sorted(ativos), 2))
 
-for periodo_nome, dias in periodos.items():
-    if dias:
-        df_periodo = df_norm.tail(dias)
-    else:
-        df_periodo = df_norm.copy()
+for a1, a2 in pares:
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[a1], mode='lines', name=a1))
+    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[a2], mode='lines', name=a2))
+    fig.update_layout(
+        title=f"Comparativo - {a1} vs {a2}",
+        xaxis_title="Data",
+        yaxis_title="Rentabilidade Normalizada",
+        template="plotly_white"
+    )
+    nome_arquivo = f"{a1.upper()}_{a2.upper()}.html"
+    fig.write_html(f"{output_path}/{nome_arquivo}", include_plotlyjs="cdn", full_html=True)
 
-    # Gráficos individuais
-    for ativo in ativos:
-        serie = df_periodo[ativo].dropna()
-        if len(serie) < 2 or serie.nunique() <= 1:
-            print(f"⚠️ Ignorando {ativo}_{periodo_nome} - dados insuficientes ou constantes")
-            continue
-
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=serie.index, y=serie, mode='lines', name=ativo))
-        fig.update_layout(
-            title=f"Rentabilidade - {ativo} ({periodo_nome})",
-            xaxis_title="Data",
-            yaxis_title="Rentabilidade Normalizada",
-            template="plotly_white"
-        )
-        fig.write_html(f"{graficos_path}/{ativo}_{periodo_nome}.html", include_plotlyjs="cdn", full_html=True)
 
     # Gráficos comparativos
     for a1, a2 in itertools.combinations(ativos, 2):
