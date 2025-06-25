@@ -17,20 +17,30 @@ tickers = {
     "IVVB11.SA": "IVVB11"
 }
 
+# Parâmetros
 start_date = "2022-01-01"
+periodos = {
+    "all": None,
+    "365": 365,
+    "180": 180,
+    "90": 90,
+    "30": 30
+}
+
+# Baixa dados
 df_all = yf.download(list(tickers.keys()), start=start_date, auto_adjust=True)["Close"]
 df_all.columns = [tickers.get(col, col) for col in df_all.columns]
 
-# CDI simulado como benchmark
+# CDI simulado
 cdi_rate_aa = 0.1365
 cdi_daily = (1 + cdi_rate_aa) ** (1 / 252) - 1
 df_all["CDI"] = (1 + cdi_daily) ** np.arange(len(df_all))
 df_all["CDI"] = df_all["CDI"] / df_all["CDI"].iloc[0]
 
-# Normaliza os ativos
+# Normaliza
 df_norm = df_all / df_all.iloc[0]
 
-# KPIs
+# Calcula KPIs
 def calc_kpis(series):
     rentab = series.iloc[-1] - 1
     vol = np.std(series.pct_change(fill_method=None)) * np.sqrt(252)
@@ -45,41 +55,8 @@ def calc_kpis(series):
 
 kpis_df = df_norm.apply(calc_kpis)
 
-# Caminhos
-output_path = "docs/assets/data/graficos"
-os.makedirs(output_path, exist_ok=True)
-
-# Gráficos individuais
-for ativo in df_norm.columns:
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[ativo], mode='lines', name=ativo))
-    fig.update_layout(
-        title=f"Rentabilidade Acumulada - {ativo}",
-        xaxis_title="Data",
-        yaxis_title="Rentabilidade Normalizada",
-        template="plotly_white"
-    )
-    fig.write_html(f"{output_path}/{ativo}.html", include_plotlyjs="cdn", full_html=True)
-
-# Gráficos comparativos (duplas únicas ordenadas)
-ativos = df_norm.columns.tolist()
-pares = list(itertools.combinations(sorted(ativos), 2))
-
-for a1, a2 in pares:
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[a1], mode='lines', name=a1))
-    fig.add_trace(go.Scatter(x=df_norm.index, y=df_norm[a2], mode='lines', name=a2))
-    fig.update_layout(
-        title=f"Comparativo - {a1} vs {a2}",
-        xaxis_title="Data",
-        yaxis_title="Rentabilidade Normalizada",
-        template="plotly_white"
-    )
-    nome_arquivo = f"{a1}_{a2}.html"
-    fig.write_html(f"{output_path}/{nome_arquivo}", include_plotlyjs="cdn", full_html=True)
-
 # KPIs HTML
-kpi_output = "docs/assets/data/kpis.html"
+os.makedirs("docs/assets/data", exist_ok=True)
 kpi_html = "<div class='row my-4'>\n"
 for ativo in kpis_df.columns:
     kpi_html += f"<div class='col-md-3'><div class='bg-light kpi-card'><strong>{ativo}</strong><br/>"
@@ -87,8 +64,44 @@ for ativo in kpis_df.columns:
         kpi_html += f"{metric}: {value}<br/>"
     kpi_html += "</div></div>\n"
 kpi_html += "</div>"
-
-with open(kpi_output, "w", encoding="utf-8") as f:
+with open("docs/assets/data/kpis.html", "w", encoding="utf-8") as f:
     f.write(kpi_html)
 
-print("✅ Dashboard gerado com sucesso!")
+# Geração de gráficos
+graficos_path = "docs/assets/data/comparador"
+os.makedirs(graficos_path, exist_ok=True)
+ativos = df_norm.columns.tolist()
+
+for periodo_nome, dias in periodos.items():
+    if dias:
+        df_periodo = df_norm.tail(dias)
+    else:
+        df_periodo = df_norm.copy()
+
+    # Gráficos individuais
+    for ativo in ativos:
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_periodo.index, y=df_periodo[ativo], mode='lines', name=ativo))
+        fig.update_layout(
+            title=f"Rentabilidade - {ativo} ({periodo_nome})",
+            xaxis_title="Data",
+            yaxis_title="Rentabilidade Normalizada",
+            template="plotly_white"
+        )
+        fig.write_html(f"{graficos_path}/{ativo}_{periodo_nome}.html", include_plotlyjs="cdn", full_html=True)
+
+    # Gráficos comparativos
+    for a1, a2 in itertools.combinations(ativos, 2):
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=df_periodo.index, y=df_periodo[a1], mode='lines', name=a1))
+        fig.add_trace(go.Scatter(x=df_periodo.index, y=df_periodo[a2], mode='lines', name=a2))
+        fig.update_layout(
+            title=f"Comparativo - {a1} vs {a2} ({periodo_nome})",
+            xaxis_title="Data",
+            yaxis_title="Rentabilidade Normalizada",
+            template="plotly_white"
+        )
+        nome_arquivo = f"{a1}_{a2}_{periodo_nome}.html"
+        fig.write_html(f"{graficos_path}/{nome_arquivo}", include_plotlyjs="cdn", full_html=True)
+
+print("✅ Todos os gráficos foram gerados com sucesso!")
