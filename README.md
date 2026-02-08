@@ -1,4 +1,4 @@
-*LINK:* https://gabrielryuu.github.io/Finexor/
+*LINK:* https://gabriel-2911.github.io/Finexor/
 # 📊 Finexor
 
 **Finexor** é um dashboard interativo e gratuito de análise comparativa de ativos reais, com base em dados históricos autênticos de ações, índices, ETFs e benchmarks como o CDI. Ele também fornece um diagnóstico do perfil de investidor com base em um quiz simples.
