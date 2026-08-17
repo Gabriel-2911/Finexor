@@ -1,0 +1,6 @@
+# Finexor — dependências do gerador de dados.
+# O front-end não tem build step: Plotly vem do CDN.
+pandas>=2.2
+numpy>=1.26
+yfinance>=0.2.54
+requests>=2.32

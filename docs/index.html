@@ -1,187 +1,326 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR" data-tema="escuro">
 <head>
-  <meta charset="UTF-8" />
-  <title>Finexor - Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body { margin: 0; padding: 0; }
-    .sidebar {
-      height: 100vh;
-      width: 220px;
-      position: fixed;
-      background-color: #111;
-      color: white;
-      padding-top: 20px;
-    }
-    .sidebar a {
-      padding: 12px;
-      display: block;
-      color: white;
-      text-decoration: none;
-    }
-    .sidebar a:hover {
-      background-color: #575757;
-    }
-    .main-content {
-      margin-left: 230px;
-      padding: 20px;
-    }
-    .kpi-card {
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 15px;
-    }
-    .loader {
-      display: none;
-      text-align: center;
-      padding: 20px;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finexor — comparador e simulador de carteira da B3</title>
+<meta name="description" content="Compare ações, ETFs, índices e CDI com retorno, volatilidade, Sharpe, Sortino, drawdown e beta. Simule carteiras com aporte mensal e rebalanceamento.">
+<meta name="color-scheme" content="dark light">
+
+<meta property="og:title" content="Finexor — comparador e simulador de carteira da B3">
+<meta property="og:description" content="Indicadores de risco e retorno recalculados na janela que você escolher, e backtest de carteira com aportes e rebalanceamento.">
+<meta property="og:type" content="website">
+
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%230f1a2b'/><path d='M6 23 L12 15 L18 19 L26 8' stroke='%231b5fcc' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/finexor.css">
 </head>
 <body>
-  <div class="sidebar">
-    <h4 class="text-center">📊 Finexor</h4>
-    <a href="#dashboard">Dashboard</a>
-    <a href="#perfil">Seu Perfil</a>
-    <a href="#sobre">Sobre</a>
+
+<header class="topo">
+  <div class="topo-interno">
+    <div class="marca">Fine<span>xor</span></div>
+    <nav class="vistas" id="navVistas" aria-label="Seções">
+      <button type="button" data-ir="comparar" aria-pressed="true">Comparar</button>
+      <button type="button" data-ir="carteira" aria-pressed="false">Carteira</button>
+      <button type="button" data-ir="risco" aria-pressed="false">Risco</button>
+      <button type="button" data-ir="perfil" aria-pressed="false">Perfil</button>
+    </nav>
+    <div class="topo-direita">
+      <span class="carimbo" id="carimbo"></span>
+      <button type="button" class="btn-icone" id="btnTema" aria-label="Alternar tema">☾</button>
+    </div>
   </div>
+</header>
 
-  <div class="main-content">
-    <section id="dashboard">
-      <h2>Rentabilidade Comparada</h2>
+<!-- A fita é painel de retorno e seletor de séries ao mesmo tempo. -->
+<div class="fita-moldura">
+  <div class="fita" id="fita" role="group" aria-label="Ativos — clique para incluir na comparação"></div>
+</div>
 
-      <div class="row mb-3">
-        <div class="col-md-4">
-          <label for="ativoSelect" class="form-label">Ativo principal:</label>
-          <select id="ativoSelect" class="form-select" onchange="trocarAtivo()">
-            <option value="VALE3">VALE3</option>
-            <option value="PETR4">PETR4</option>
-            <option value="ITUB4">ITUB4</option>
-            <option value="BBAS3">BBAS3</option>
-            <option value="B3SA3">B3SA3</option>
-            <option value="WEGE3">WEGE3</option>
-            <option value="IBOV">IBOV</option>
-            <option value="IVVB11">IVVB11</option>
-            <option value="CDI">CDI</option>
-          </select>
-        </div>
+<main class="envelope">
 
-        <div class="col-md-4">
-          <label for="ativoComparado" class="form-label">Comparar com:</label>
-          <select id="ativoComparado" class="form-select" onchange="trocarAtivo()">
-            <option value="">(Nenhum)</option>
-            <option value="VALE3">VALE3</option>
-            <option value="PETR4">PETR4</option>
-            <option value="ITUB4">ITUB4</option>
-            <option value="BBAS3">BBAS3</option>
-            <option value="B3SA3">B3SA3</option>
-            <option value="WEGE3">WEGE3</option>
-            <option value="IBOV">IBOV</option>
-            <option value="IVVB11">IVVB11</option>
-            <option value="CDI">CDI</option>
-          </select>
-        </div>
+  <div class="carregando" id="carregando">carregando dados de mercado…</div>
 
-        <div class="col-md-4">
-          <label for="periodoSelect" class="form-label">Período:</label>
-          <select id="periodoSelect" class="form-select" onchange="trocarAtivo()">
-            <option value="all">Desde 2022</option>
-            <option value="365">Últimos 12 meses</option>
-            <option value="180">Últimos 6 meses</option>
-            <option value="90">Últimos 3 meses</option>
-            <option value="30">Últimos 30 dias</option>
-          </select>
-        </div>
+  <div id="painel" hidden>
+
+    <div class="controles">
+      <div class="campo cresce">
+        <label class="rotulo" for="busca">Buscar ativo <kbd>/</kbd></label>
+        <input type="search" id="busca" placeholder="código, nome ou setor" autocomplete="off">
       </div>
+      <div class="campo">
+        <span class="rotulo" id="lbClasse">Classe</span>
+        <div class="segmentado" id="filtrosClasse" role="group" aria-labelledby="lbClasse"></div>
+      </div>
+      <div class="campo">
+        <span class="rotulo" id="lbPeriodo">Janela</span>
+        <div class="segmentado" id="periodos" role="group" aria-labelledby="lbPeriodo"></div>
+      </div>
+    </div>
 
-      <iframe src="assets/data/kpis.html" width="100%" height="180px" style="border:none;"></iframe>
+    <!-- ================= COMPARAR ================= -->
+    <div data-vista="comparar">
 
-      <div class="loader" id="loader">⏳ Carregando gráfico...</div>
-      <iframe id="graficoFrame" width="100%" height="500px" style="border:none;"></iframe>
-      <div id="msgIndisponivel" class="alert alert-warning mt-3" style="display:none;">🚫 Gráfico indisponível para essa combinação.</div>
-    </section>
+      <section class="quadro">
+        <div class="quadro-cabeca">
+          <div>
+            <div class="cotacao" id="cotacao" hidden>
+              <span class="cotacao-codigo" id="cotacaoCodigo"></span>
+              <span class="cotacao-valor" id="cotacaoValor"></span>
+              <span class="cotacao-meta" id="cotacaoMeta"></span>
+            </div>
+            <h2 class="quadro-titulo" id="quadroTitulo">Rentabilidade acumulada</h2>
+            <span class="quadro-nota" id="quadroNota"></span>
+          </div>
+          <div class="segmentado" id="modosGrafico" role="group" aria-label="Tipo de gráfico">
+            <button type="button" data-modo="retorno" aria-pressed="true">Retorno</button>
+            <button type="button" data-modo="drawdown" aria-pressed="false">Quedas</button>
+            <button type="button" data-modo="anos" aria-pressed="false">Por ano</button>
+          </div>
+        </div>
+        <div class="tela" id="grafico" role="img" aria-label="Gráfico dos ativos selecionados"></div>
+        <p class="vazio" id="semSerie" hidden>
+          Nenhum ativo selecionado.<br>
+          Clique nos códigos da fita acima para montar a comparação.
+        </p>
+      </section>
 
-    <hr />
-    <section id="perfil">
-      <h2>Diagnóstico de Perfil</h2>
-      <form id="quiz">
-        <label>1. Qual sua tolerância ao risco?</label><br/>
-        <input type="radio" name="q1" value="C"> Baixa<br/>
-        <input type="radio" name="q1" value="M"> Média<br/>
-        <input type="radio" name="q1" value="A"> Alta<br/><br/>
+      <section class="secao">
+        <div class="secao-cabeca">
+          <h2>Indicadores da janela</h2>
+          <button type="button" class="botao" id="btnLimpar">Limpar seleção</button>
+        </div>
+        <p class="secao-sub">
+          Tudo recalculado para o período escolhido — inclusive o CDI usado como
+          taxa livre de risco. Clique numa linha para incluir o ativo no gráfico,
+          ou num cabeçalho para ordenar.
+        </p>
+        <div class="rolagem">
+          <table class="dados">
+            <thead id="tabelaCabeca"></thead>
+            <tbody id="tabelaCorpo"></tbody>
+          </table>
+        </div>
+        <p class="rodape-nota">
+          Retorno a.a., volatilidade, Sharpe e Sortino anualizados a 252 pregões.
+          Sharpe = (retorno a.a. − CDI a.a. da mesma janela) ÷ volatilidade a.a.;
+          o Sortino troca o denominador pelo desvio só das quedas. Beta contra o
+          IBOV. DY = proventos declarados em 12 meses ÷ preço atual. Traço (—)
+          indica amostra insuficiente ou volatilidade nula.
+        </p>
+      </section>
+    </div>
 
-        <label>2. Por quanto tempo pretende investir?</label><br/>
-        <input type="radio" name="q2" value="C"> Até 1 ano<br/>
-        <input type="radio" name="q2" value="M"> 1 a 3 anos<br/>
-        <input type="radio" name="q2" value="A"> Acima de 3 anos<br/><br/>
+    <!-- ================= CARTEIRA ================= -->
+    <div data-vista="carteira" hidden>
+      <section class="secao" style="padding-top:22px">
+        <div class="secao-cabeca"><h2>Simulador de carteira</h2></div>
+        <p class="secao-sub">
+          Monte uma alocação e veja o que ela teria feito, com aporte mensal e
+          rebalanceamento periódico. A simulação começa quando todos os ativos
+          escolhidos já existem.
+        </p>
 
-        <label>3. Como reage a perdas?</label><br/>
-        <input type="radio" name="q3" value="C"> Prefiro evitar<br/>
-        <input type="radio" name="q3" value="M"> Aceito alguma<br/>
-        <input type="radio" name="q3" value="A"> Natural do mercado<br/><br/>
+        <div class="painel-carteira">
+          <div>
+            <div class="caixa">
+              <h3>Alocação</h3>
+              <div id="listaPesos"></div>
+              <p class="rodape-nota">Soma atual: <span id="somaPesos">—</span></p>
 
-        <button type="button" onclick="diagnosticar()" class="btn btn-primary">Diagnosticar</button>
-      </form>
-      <div id="resultado" class="mt-4"></div>
-    </section>
+              <label class="rotulo" for="buscaCarteira">Adicionar ativo</label>
+              <input type="search" id="buscaCarteira" placeholder="buscar…" autocomplete="off">
+              <div class="chips" id="seletorCarteira"></div>
+            </div>
 
-    <hr />
-    <section id="sobre">
-      <h2>Sobre o Finexor</h2>
-      <p>Projeto gratuito e open source para diagnóstico de perfil e análise comparativa de ativos reais.</p>
-    </section>
+            <div class="caixa">
+              <h3>Parâmetros</h3>
+              <div class="campos-carteira">
+                <div class="campo">
+                  <label class="rotulo" for="aporteInicial">Aporte inicial</label>
+                  <input type="number" id="aporteInicial" value="10000" min="0" step="500">
+                </div>
+                <div class="campo">
+                  <label class="rotulo" for="aporteMensal">Aporte mensal</label>
+                  <input type="number" id="aporteMensal" value="500" min="0" step="100">
+                </div>
+              </div>
+
+              <div class="campo" style="margin-top:12px">
+                <span class="rotulo" id="lbRebal">Rebalanceamento</span>
+                <div class="segmentado" id="rebalanceamento" role="group" aria-labelledby="lbRebal">
+                  <button type="button" data-rebal="nunca" aria-pressed="false">Nunca</button>
+                  <button type="button" data-rebal="mensal" aria-pressed="false">Mensal</button>
+                  <button type="button" data-rebal="trimestral" aria-pressed="true">Trim.</button>
+                  <button type="button" data-rebal="anual" aria-pressed="false">Anual</button>
+                </div>
+              </div>
+
+              <div class="campo" style="margin-top:12px">
+                <label class="rotulo" for="custoRebal">Custo por rebalanceamento (%)</label>
+                <input type="number" id="custoRebal" value="0" min="0" max="5" step="0.05">
+              </div>
+
+              <button type="button" class="botao" id="limparCarteira" style="margin-top:14px">Zerar carteira</button>
+            </div>
+          </div>
+
+          <div>
+            <div id="resumoCarteira"></div>
+            <section class="quadro">
+              <div class="quadro-cabeca">
+                <h3 class="quadro-titulo">Evolução do patrimônio</h3>
+                <span class="quadro-nota">carteira × total aportado × benchmarks</span>
+              </div>
+              <div class="tela" id="graficoCarteira"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ================= RISCO ================= -->
+    <div data-vista="risco" hidden>
+      <section class="secao" style="padding-top:22px">
+        <div class="secao-cabeca"><h2>Risco × retorno</h2></div>
+        <p class="secao-sub">
+          Cada ponto é um ativo. Acima da linha tracejada, ele pagou mais que o
+          CDI; à direita, oscilou mais para chegar lá.
+        </p>
+        <section class="quadro"><div class="tela" id="graficoRisco"></div></section>
+      </section>
+
+      <section class="secao">
+        <div class="secao-cabeca"><h2>Correlação</h2></div>
+        <p class="secao-sub" id="notaCorrelacao"></p>
+        <section class="quadro"><div class="tela" id="graficoCorrelacao"></div></section>
+        <p class="rodape-nota">
+          Correlação de Pearson entre retornos diários. Perto de 1, os ativos
+          andam juntos e diversificam pouco; perto de 0 ou negativa, um segura o
+          outro nas quedas.
+        </p>
+      </section>
+
+      <section class="secao">
+        <div class="secao-cabeca">
+          <h2>Janelas móveis</h2>
+          <div class="segmentado" id="janelasMoveis" role="group" aria-label="Tamanho da janela"></div>
+        </div>
+        <p class="secao-sub">
+          Em vez de um período escolhido a dedo, todos eles: o que você teria
+          pego entrando em qualquer dia e ficando o prazo inteiro.
+        </p>
+        <h3 class="quadro-titulo" id="tituloJanelas" style="margin-bottom:10px"></h3>
+        <div id="resumoJanelas"></div>
+        <section class="quadro"><div class="tela baixa" id="graficoJanelas"></div></section>
+      </section>
+
+      <section class="secao">
+        <div class="secao-cabeca"><h2>Maiores quedas</h2></div>
+        <p class="secao-sub">
+          Quanto caiu do topo ao fundo, quanto tempo levou para cair e quanto
+          levou para voltar ao patamar anterior.
+        </p>
+        <div class="rolagem"><table class="dados" id="tabelaQuedas"></table></div>
+      </section>
+    </div>
+
+    <!-- ================= PERFIL ================= -->
+    <div data-vista="perfil" hidden>
+      <section class="secao" style="padding-top:22px">
+        <div class="secao-cabeca"><h2>Perfil de investidor</h2></div>
+        <p class="secao-sub">
+          Quatro perguntas. O resultado vira uma alocação carregada no
+          simulador, para você ver como ela teria se comportado de verdade.
+        </p>
+
+        <div class="perfil-grade">
+          <form id="quiz" novalidate>
+            <fieldset>
+              <legend>1. Se a carteira caísse 20% em um mês, o que você faria?</legend>
+              <div class="opcoes">
+                <label class="opcao"><input type="radio" name="q1" value="0"> Resgataria tudo para parar a perda</label>
+                <label class="opcao"><input type="radio" name="q1" value="1"> Resgataria parte e reavaliaria</label>
+                <label class="opcao"><input type="radio" name="q1" value="2"> Manteria a posição sem mexer</label>
+                <label class="opcao"><input type="radio" name="q1" value="3"> Aportaria mais aproveitando o preço</label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>2. Em quanto tempo você vai precisar desse dinheiro?</legend>
+              <div class="opcoes">
+                <label class="opcao"><input type="radio" name="q2" value="0"> Menos de 1 ano</label>
+                <label class="opcao"><input type="radio" name="q2" value="1"> Entre 1 e 3 anos</label>
+                <label class="opcao"><input type="radio" name="q2" value="2"> Entre 3 e 5 anos</label>
+                <label class="opcao"><input type="radio" name="q2" value="3"> Mais de 5 anos</label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>3. Quanto da sua reserva de emergência já está formada?</legend>
+              <div class="opcoes">
+                <label class="opcao"><input type="radio" name="q3" value="0"> Ainda não comecei</label>
+                <label class="opcao"><input type="radio" name="q3" value="1"> Cobre 1 a 3 meses de despesa</label>
+                <label class="opcao"><input type="radio" name="q3" value="2"> Cobre 3 a 6 meses</label>
+                <label class="opcao"><input type="radio" name="q3" value="3"> Cobre mais de 6 meses</label>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>4. Qual sua experiência com renda variável?</legend>
+              <div class="opcoes">
+                <label class="opcao"><input type="radio" name="q4" value="0"> Nunca investi fora da poupança ou do CDI</label>
+                <label class="opcao"><input type="radio" name="q4" value="1"> Já comprei fundos ou ETFs</label>
+                <label class="opcao"><input type="radio" name="q4" value="2"> Compro ações com alguma regularidade</label>
+                <label class="opcao"><input type="radio" name="q4" value="3"> Acompanho e ajusto a carteira ativamente</label>
+              </div>
+            </fieldset>
+
+            <button type="button" class="botao botao-forte" id="btnDiagnosticar">Ver meu perfil</button>
+            <p class="aviso-form" id="avisoQuiz" role="status" aria-live="polite"></p>
+          </form>
+
+          <aside class="caixa" id="resultado" hidden aria-live="polite">
+            <span class="rotulo">Diagnóstico</span>
+            <p class="resultado-perfil" id="perfilNome"></p>
+            <span class="rotulo" id="perfilScore"></span>
+            <p id="perfilTexto"></p>
+
+            <span class="rotulo">Alocação sugerida</span>
+            <div class="barra-alocacao" id="barraAlocacao"></div>
+            <div class="legenda-alocacao" id="legendaAlocacao"></div>
+
+            <button type="button" class="botao" id="irParaCarteira" hidden style="margin-top:16px">
+              Simular essa carteira →
+            </button>
+
+            <p class="disclaimer">
+              Exercício educacional de um projeto open source. Não é recomendação
+              de investimento, não considera sua situação patrimonial nem
+              tributária, e não substitui a análise de suitability obrigatória
+              feita pela sua corretora.
+            </p>
+          </aside>
+        </div>
+      </section>
+    </div>
+
+    <footer class="rodape">
+      <span id="fonteDados"></span>
+      <span>
+        <a href="https://github.com/Gabriel-2911/Finexor">Código no GitHub</a> ·
+        MIT · Gabriel Cortes Teixeira
+      </span>
+    </footer>
+
   </div>
+</main>
 
-  <script>
-    let disponiveis = [];
-
-    fetch("assets/data/comparador/disponiveis.json")
-      .then(res => res.json())
-      .then(data => {
-        disponiveis = data;
-        trocarAtivo();
-      });
-
-    function diagnosticar() {
-      const respostas = ['q1', 'q2', 'q3'].map(id => document.querySelector(`input[name="${id}"]:checked`)?.value || 'C');
-      const score = respostas.reduce((acc, val) => acc + (val === 'A' ? 2 : val === 'M' ? 1 : 0), 0);
-      let perfil = "Conservador";
-      if (score >= 5) perfil = "Agressivo";
-      else if (score >= 3) perfil = "Moderado";
-      document.getElementById("resultado").innerHTML = `<h4>🧠 Seu perfil: <strong>${perfil}</strong></h4>`;
-    }
-
-    function trocarAtivo() {
-      const ativo = document.getElementById("ativoSelect").value;
-      const comparado = document.getElementById("ativoComparado").value;
-      const periodo = document.getElementById("periodoSelect").value;
-      const loader = document.getElementById("loader");
-      const frame = document.getElementById("graficoFrame");
-      const msg = document.getElementById("msgIndisponivel");
-
-      loader.style.display = "block";
-      frame.style.display = "none";
-      msg.style.display = "none";
-
-      let nomeArquivo = comparado
-        ? `${ativo}_${comparado}_${periodo}`
-        : `${ativo}_${periodo}`;
-
-      const caminho = `assets/data/comparador/${nomeArquivo}.html`;
-
-      if (!comparado || disponiveis.includes(nomeArquivo)) {
-        frame.onload = () => {
-          loader.style.display = "none";
-          frame.style.display = "block";
-        };
-        frame.src = caminho;
-      } else {
-        loader.style.display = "none";
-        frame.src = "";
-        msg.style.display = "block";
-      }
-    }
-  </script>
+<script src="plotly.min.js"></script>
+<script type="module" src="assets/js/app.js"></script>
 </body>
 </html>
